@@ -369,7 +369,7 @@ class ERestEventListenerRegistry
 			$this->setHttpStatus(200);
 			return $this->renderJSON([
 				'type'							=> 'rest',
-				'success'						=> (($count > 0)? true: false),
+				'success'						=> true,
 				'message'						=> (($count > 0)? "Record(s) Found": "No Record(s) Found"),
 				'totalCount'				=> $count,
 				'modelName'					=> $model_name,
@@ -394,7 +394,7 @@ class ERestEventListenerRegistry
 			
 			return $this->renderJSON([
 				'type'							=> 'rest',
-				'success'						=> (($count > 0)? true: false),
+				'success'						=> true,
 				'message'						=> (($count > 0)? "Record(s) Found": "No Record(s) Found"),
 				'totalCount'				=> $count,
 				'modelName'					=> $subresource_name,
