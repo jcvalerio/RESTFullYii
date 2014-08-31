@@ -1,5 +1,5 @@
 {
-	"name": "starship/restfullyii",
+	"name": "jcvalerio/restfullyii",
 	"type": "library",
 	"description": "RESTFull API for your Yii application",
 	"keywords": ["REST", "RESTFull", "Yii", "API"],
