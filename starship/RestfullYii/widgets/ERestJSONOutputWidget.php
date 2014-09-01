@@ -140,19 +140,19 @@ class ERestJSONOutputWidget extends CWidget
 
         $listOfModels = !is_array($model) ? [$model] : $model;
 
-        $process_relations = function($relationName, $models) {
+		$process_relations = function($relationName, $models) {
             if (is_null($models)) {
-                return null;
-            }
+				return null;
+			}
             if (!is_array($models)) {
-                return $this->processAttributes($models, $relationName);
-            }
-            $list = [];
-            foreach ($models as $model) {
-                $list[] = $this->processAttributes($model, $relationName);
-            }
-            return $list;
-        };
+				return $this->processAttributes($models, $relationName);
+			}
+			$list = [];
+            foreach ($models as $index => $model) {
+                $list[$index] = $this->processAttributes($model, $relationName);
+			}
+			return $list;
+		};
 
         array_walk($listOfModels, function($ar_model, $index) use($relations, &$model_as_array, $process_relations) {
             $model_as_array[$index] = $this->processAttributes($ar_model);
