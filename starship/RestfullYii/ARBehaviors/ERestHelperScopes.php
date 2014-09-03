@@ -78,16 +78,11 @@ class ERestHelperScopes extends CActiveRecordBehavior
                 $property = $orderListItem['property'];
                 if (strpos($property, '.')) {
                     list($alias, $property) = explode('.', $property);
-                    // @todo jcvalerio disable dbCriteria until resolve why yii expect and integer index instead of a relation name.
-                    /*
                     if (!isset($dbCriteria['with'][$alias])) {
                         $dbCriteria['with'][$alias] = [];
                         $dbCriteria['with'][$alias]['order'] = '';
                     }
-                     * 
-                     */
-                    $dbCriteria['order'] .=  (!empty($dbCriteria['with'][$alias]['order'])? ', ': '') . $this->getSortSQL($property, $orderListItem['direction'], $alias);
-                    //$dbCriteria['with'][$alias]['order'] = (!empty($dbCriteria['with'][$alias]['order']) ? ', ' : '') . $this->getSortSQL($property, $orderListItem['direction'], $alias);
+                    $dbCriteria['with'][$alias]['order'] = (!empty($dbCriteria['with'][$alias]['order']) ? ', ' : '') . $this->getSortSQL($property, $orderListItem['direction'], $alias);
                 } else {
                     $dbCriteria['order'] .= ((!empty($dbCriteria['order'])) ? ", " : "") . $this->getSortSQL($property, $orderListItem['direction'], $alias);
                 }
@@ -166,17 +161,13 @@ class ERestHelperScopes extends CActiveRecordBehavior
             $query .= ")";
         }
 
-        // @todo jcvalerio cambiar por index integer
-        $index = 0;
-        $with = array_reduce(array_keys($related_query), function($with, $relation) use($related_query, $related_params, $index) {
-
+        $with = array_reduce(array_keys($related_query), function($with, $relation) use($related_query, $related_params) {
             $with[$relation] = [
                 'condition' => $related_query[$relation] . ')',
                 'params' => $related_params[$relation],
                 'joinType' => 'INNER JOIN',
                 'together' => true,
             ];
-            $index++;
             return $with;
         }, []);
 
@@ -274,6 +265,36 @@ class ERestHelperScopes extends CActiveRecordBehavior
     }
 
     /**
+     * getRelationClassName
+     *
+     * Gets the class name of a relation or returns false
+     *
+     * @param (Object) (model) active record model
+     * @param (String) (key) the relation name
+     *
+     * @return (Mixed) returns the relation class name (String) or false (Bool)
+     */
+    private function getRelationClassName($model, $key)
+    {
+        $relations = $model->relations();
+        if (isset($relations[$key])) {
+            return $relations[$key][1];
+        }
+        return false;
+    }
+
+    private function getControllerModel()
+    {
+        if ($this->Owner instanceof CActiveRecord) {
+            $model = $this->Owner;
+        } else {
+            $className = self::resolveModelName($this->id);
+            $model = call_user_func([$className, 'model']);
+        }
+        return $model;
+    }
+
+    /**
      * getFilterCType
      *
      * returns the type of the property being filtered
@@ -284,17 +305,21 @@ class ERestHelperScopes extends CActiveRecordBehavior
      */
     private function getFilterCType($property)
     {
+        $model = $this->getControllerModel();
         if (strpos($property, '.') === false) {
-            if ($this->Owner->hasAttribute($property)) {
-                return $this->Owner->metaData->columns[$property]->type;
+            if ($model->hasAttribute($property)) {
+                return $model->metaData->columns[$property]->type;
             }
         } else {
-            list($relation, $property) = explode('.', $property);
-            // @todo jcvalerio resolve the class model instead of use the relation name as class name
-            $modelName = ucfirst($relation);
-            $relatedModel = new $modelName();
-            if ($relatedModel->hasAttribute($property)) {
-                return $relatedModel->metaData->columns[$property]->type;
+            $className = $this->getRelationClassName($model, $property);
+            if ($className !== false) {
+                $relatedModel = call_user_func([$className, 'model']);
+                list($relation, $property) = explode('.', $property);
+                //$relation = self::resolveModelName($relation);
+                //$relatedModel = new $className();
+                if ($relatedModel->hasAttribute($property)) {
+                    return $relatedModel->metaData->columns[$property]->type;
+                }
             }
         }
         return 'text';
