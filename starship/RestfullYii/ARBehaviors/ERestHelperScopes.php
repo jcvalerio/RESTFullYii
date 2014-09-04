@@ -78,11 +78,12 @@ class ERestHelperScopes extends CActiveRecordBehavior
                 $property = $orderListItem['property'];
                 if (strpos($property, '.')) {
                     list($alias, $property) = explode('.', $property);
+                    // @todo jcvalerio disable dbCriteria until resolve why sort is applied in different order.   
                     if (!isset($dbCriteria['with'][$alias])) {
                         $dbCriteria['with'][$alias] = [];
                         $dbCriteria['with'][$alias]['order'] = '';
                     }
-                    $dbCriteria['with'][$alias]['order'] = (!empty($dbCriteria['with'][$alias]['order']) ? ', ' : '') . $this->getSortSQL($property, $orderListItem['direction'], $alias);
+                    $dbCriteria['order'] .= (!empty($dbCriteria['order']) ? ', ' : '') . $this->getSortSQL($property, $orderListItem['direction'], $alias);
                 } else {
                     $dbCriteria['order'] .= ((!empty($dbCriteria['order'])) ? ", " : "") . $this->getSortSQL($property, $orderListItem['direction'], $alias);
                 }
