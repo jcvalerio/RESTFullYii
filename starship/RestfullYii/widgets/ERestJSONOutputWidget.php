@@ -166,17 +166,22 @@ class ERestJSONOutputWidget extends CWidget
         if (is_null($models)) {
             return null;
         }
+        $processRelations = function ($model, $modelData) {
+            foreach ($model->relations() as $relation => $relationConfig) {
+                if ($model->hasRelated($relation)) {
+                    $modelData[$relation] = $this->processRelations($relation, $model->$relation); //$this->processAttributes($model->$relation, $relation);
+                }
+            }
+            return $modelData;
+        };
         if (!is_array($models)) {
-            return $this->processAttributes($models, $relationName);
+            $modelData = $this->processAttributes($models, $relationName);
+            return $processRelations($models, $modelData);
         }
         $list = [];
         foreach ($models as $index => $model) {
-            $list[$index] = $this->processAttributes($model, $relationName);
-            foreach ($model->relations() as $relation => $relationConfig) {
-                if ($model->hasRelated($relation)) {
-                    $list[$index][$relation] = $this->processRelations($relation, $model->$relation); //$this->processAttributes($model->$relation, $relation);
-                }
-            }
+            $modelData = $this->processAttributes($model, $relationName);
+            $list[$index] = $processRelations($model, $modelData);
         }
         return $list;
     }
