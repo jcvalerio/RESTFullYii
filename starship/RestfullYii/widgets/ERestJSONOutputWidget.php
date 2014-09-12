@@ -139,34 +139,46 @@ class ERestJSONOutputWidget extends CWidget
         }
 
         $listOfModels = !is_array($model) ? [$model] : $model;
-
-		$process_relations = function($relationName, $models) {
-            if (is_null($models)) {
-				return null;
-			}
-            if (!is_array($models)) {
-				return $this->processAttributes($models, $relationName);
-			}
-			$list = [];
-            foreach ($models as $index => $model) {
-                $list[$index] = $this->processAttributes($model, $relationName);
-			}
-			return $list;
-		};
-
-        array_walk($listOfModels, function($ar_model, $index) use($relations, &$model_as_array, $process_relations) {
+        array_walk($listOfModels, function($ar_model, $index) use($relations, &$model_as_array) {
             $model_as_array[$index] = $this->processAttributes($ar_model);
             foreach ($relations as $relation) {
                 $model_as_array[$index][$relation] = (
                     ($ar_model->relations()[$relation][0] != CActiveRecord::STAT) ?
                         //(is_object($ar_model->$relation) || is_array($ar_model->$relation))?
-                        $process_relations($relation, $ar_model->$relation) :
+                        $this->processRelations($relation, $ar_model->$relation) :
                         $ar_model->$relation
                     );
             }
         });
 
         return is_array($model) ? $model_as_array : $model_as_array[0];
+    }
+
+    /**
+     * Format a model or models data as an array with relations as needed
+     * 
+     * @param String $relationName the model relation to include in the data
+     * @param (Array(Object)) $models the model or models to be formatted as an array
+     * @return (Array) the model(s) data represented as an array
+     */
+    private function processRelations($relationName, $models)
+    {
+        if (is_null($models)) {
+            return null;
+        }
+        if (!is_array($models)) {
+            return $this->processAttributes($models, $relationName);
+        }
+        $list = [];
+        foreach ($models as $index => $model) {
+            $list[$index] = $this->processAttributes($model, $relationName);
+            foreach ($model->relations() as $relation => $relationConfig) {
+                if ($model->hasRelated($relation)) {
+                    $list[$index][$relation] = $this->processRelations($relation, $model->$relation); //$this->processAttributes($model->$relation, $relation);
+                }
+            }
+        }
+        return $list;
     }
 
     /**
