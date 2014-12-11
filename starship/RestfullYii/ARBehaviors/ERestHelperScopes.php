@@ -296,6 +296,41 @@ class ERestHelperScopes extends CActiveRecordBehavior
     }
 
     /**
+     * Extracts the PHP type from abstract DB type.
+     * @param ColumnSchema $column the column schema information
+     * @return string PHP type name
+     */
+    protected function getColumnPhpType($column)
+    {
+        static $typeMap = [
+            // abstract type => php type
+            'smallint' => 'integer',
+            'integer' => 'integer',
+            'bigint' => 'integer',
+            'boolean' => 'boolean',
+            'float' => 'double',
+            'binary' => 'resource',
+        ];
+        if (preg_match('/^smallint/', $column->dbType) ||
+            preg_match('/^integer/', $column->dbType) ||
+            preg_match('/^bigint/', $column->dbType)) {
+            return 'integer';
+        } else if (preg_match('/^decimal/', $column->dbType)) {
+            return 'float';
+        } else if (preg_match('/^datetime/', $column->dbType)) {
+            return 'datetime';
+        } else if (preg_match('/^date/', $column->dbType)) {
+            return 'date';
+        } else if (preg_match('/^time/', $column->dbType)) {
+            return 'time';
+        } else if (isset($typeMap[$column->type])) {
+            return $typeMap[$column->type];
+        } else {
+            return 'string';
+        }
+    }
+
+    /**
      * getFilterCType
      *
      * returns the type of the property being filtered
@@ -309,21 +344,19 @@ class ERestHelperScopes extends CActiveRecordBehavior
         $model = $this->getControllerModel();
         if (strpos($property, '.') === false) {
             if ($model->hasAttribute($property)) {
-                return $model->metaData->columns[$property]->type;
+                return $this->getColumnPhpType($model->metaData->columns[$property]);
             }
         } else {
             $className = $this->getRelationClassName($model, $property);
             if ($className !== false) {
                 $relatedModel = call_user_func([$className, 'model']);
                 list($relation, $property) = explode('.', $property);
-                //$relation = self::resolveModelName($relation);
-                //$relatedModel = new $className();
                 if ($relatedModel->hasAttribute($property)) {
-                    return $relatedModel->metaData->columns[$property]->type;
+                    return $this->getColumnPhpType($relatedModel->metaData->columns[$property]);
                 }
             }
         }
-        return 'text';
+        return 'string';
     }
 
     /**
